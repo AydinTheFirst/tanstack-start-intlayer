@@ -1,6 +1,6 @@
 # TanStack Start with Intlayer Integration
 
-A modern, production-ready template for building full-stack React applications using TanStack Start with internationalization support via [Intlayer](https://intlayer.org).
+A modern, production-ready full-stack React application using TanStack Start with internationalization support via [Intlayer](https://intlayer.org).
 
 This repository demonstrates how to integrate Intlayer for seamless i18n in TanStack Start projects.
 
@@ -54,9 +54,26 @@ Build Intlayer dictionaries:
 npm run intlayer:build
 ```
 
-## Integrating Intlayer with TanStack Start
+## Current Implementation Status
 
-This section explains how to add [Intlayer](https://intlayer.org) internationalization to a TanStack Start project, using this repository as a reference.
+This repository contains a working implementation of Intlayer with TanStack Start that includes:
+
+### ✅ Implemented Features
+
+- **Intlayer Configuration**: Basic setup with English, French, and Spanish locales
+- **Vite Integration**: Intlayer plugin configured in `vite.config.ts`
+- **Content Dictionaries**:
+  - `src/contents/app.content.ts` - Main app content
+  - `src/contents/about.content.ts` - About page content
+  - `src/contents/ls.content.ts` - Locale switcher content
+- **Custom Components**:
+  - `LocalizedLink` - Locale-aware navigation links
+  - `LocaleSwitcher` - Language selection dropdown
+- **Custom Hooks**:
+  - `useLocalizedNavigate` - Programmatic locale-aware navigation
+  - `useI18nHTMLAttributes` - HTML lang/dir attribute management
+- **Routes**: Localized routes using `{-locale}` syntax
+- **ESLint Configuration**: Ignores `.intlayer/**` and restricts direct imports
 
 ### Prerequisites
 
@@ -84,9 +101,6 @@ const config: IntlayerConfig = {
     defaultLocale: Locales.ENGLISH,
     locales: [Locales.ENGLISH, Locales.FRENCH, Locales.SPANISH],
   },
-  middleware: {
-    prefixDefault: true,
-  },
 };
 
 export default config;
@@ -99,67 +113,38 @@ TanStack Start uses file-based routing. Create routes in the `src/routes/` direc
 ```
 src/routes/
 ├── __root.tsx          # Root layout
-├── index.tsx           # Home page with redirect
-├── $locale/
+├── route.tsx           # Layout
+├── {-locale}/
 │   ├── index.tsx       # Localized home page
 │   └── about/
 │       └── index.tsx   # Localized about page
 ```
 
+Note: The current implementation uses `{-locale}` syntax for dynamic route parameters in TanStack Router.
+
 ### 4. Add Intlayer Provider to Root Layout
 
-Wrap your application with `IntlayerProvider` in the root route:
+Wrap your application with `IntlayerProvider` in the layout route:
 
 ```tsx
-// src/routes/__root.tsx
-import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router';
+// src/routes/{-locale}/route.tsx
+import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { configuration } from 'intlayer';
 import { IntlayerProvider } from 'react-intlayer';
 
-import appCss from '../styles.css?url';
-
-export const Route = createRootRoute({
-  head: () => ({
-    links: [
-      {
-        href: appCss,
-        rel: 'stylesheet',
-      },
-    ],
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        content: 'width=device-width, initial-scale=1',
-        name: 'viewport',
-      },
-      {
-        title: 'My Multilingual App',
-      },
-    ],
-  }),
-  component: RootComponent,
+export const Route = createFileRoute('/{-$locale}')({
+  component: RouteComponent,
 });
 
-function RootComponent() {
-  return (
-    <IntlayerProvider>
-      <RootDocument />
-    </IntlayerProvider>
-  );
-}
+function RouteComponent() {
+  const { locale } = Route.useParams();
 
-function RootDocument({ children }: React.PropsWithChildren) {
   return (
-    <html suppressHydrationWarning>
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
+    <IntlayerProvider
+      locale={locale ?? configuration.internationalization.defaultLocale}
+    >
+      <Outlet />
+    </IntlayerProvider>
   );
 }
 ```
@@ -169,14 +154,14 @@ function RootDocument({ children }: React.PropsWithChildren) {
 Access translations/content using the `useIntlayer` hook and use `LocalizedLink` for locale-aware navigation:
 
 ```tsx
-// src/routes/$locale/index.tsx
+// src/routes/{-locale}/index.tsx
 import { createFileRoute } from '@tanstack/react-router';
 import { useIntlayer } from 'react-intlayer';
 
 import LocaleSwitcher from '@/components/locale-switcher';
 import { LocalizedLink } from '@/components/localized-link';
 
-export const Route = createFileRoute('/$locale/')({
+export const Route = createFileRoute('/{-locale}/')({
   component: RouteComponent,
 });
 
@@ -222,20 +207,29 @@ import { type Dictionary, t } from 'intlayer';
 const appContent = {
   content: {
     title: t({
-      en: 'Welcome to My App',
-      fr: 'Bienvenue dans mon application',
-      es: 'Bienvenido a mi aplicación',
+      en: 'Welcome to Intlayer + TanStack Router',
+      fr: 'Bienvenue à Intlayer + TanStack Router',
+      es: 'Bienvenido a Intlayer + TanStack Router',
     }),
-    about: t({
-      en: 'About',
-      fr: 'À propos',
-      es: 'Acerca de',
-    }),
-    home: t({
-      en: 'Home',
-      fr: 'Accueil',
-      es: 'Inicio',
-    }),
+    links: {
+      home: t({
+        en: 'Home',
+        fr: 'Accueil',
+        es: 'Inicio',
+      }),
+      about: t({
+        en: 'About',
+        fr: 'À propos',
+        es: 'Acerca de',
+      }),
+    },
+    meta: {
+      description: t({
+        en: 'This is an example of using Intlayer with TanStack Router',
+        fr: "Ceci est un exemple d'utilisation d'Intlayer avec TanStack Router",
+        es: 'Este es un ejemplo de uso de Intlayer con TanStack Router',
+      }),
+    },
   },
   key: 'app',
 } satisfies Dictionary;
@@ -374,15 +368,23 @@ export default function LocaleSwitcher() {
 
 To enable type safety for your Intlayer dictionaries and content, ensure your `tsconfig.json` includes the Intlayer types. The Intlayer plugin should handle this automatically.
 
-### 11. Run and Build
+### 11. Current Route Structure
+
+The current implementation uses TanStack Router's dynamic route syntax with `{-locale}` for locale parameters. Here's the actual route structure:
+
+- `/{-locale}/` - Localized home page (e.g., `/en/`, `/fr/`)
+- `/{-locale}/about/` - Localized about page (e.g., `/en/about/`, `/fr/about/`)
+
+### 12. Run and Build
 
 - Start development: `npm run dev`
 - Build for production: `npm run build`
 - Build Intlayer dictionaries: `npm run intlayer:build`
 
-### 12. References
+### 13. References
 
 - [TanStack Start Documentation](https://tanstack.com/start)
+- [TanStack Router Documentation](https://tanstack.com/router)
 - [Intlayer Documentation](https://intlayer.org)
 - [Complete Example Repository](https://github.com/AydinTheFirst/tanstack-start-intlayer)
 

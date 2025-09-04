@@ -6,11 +6,11 @@ import LocaleSwitcher from '@/components/locale-switcher';
 import { LocalizedLink } from '@/components/localized-link';
 import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 
-export const Route = createFileRoute('/$locale/about/')({
+export const Route = createFileRoute('/{-$locale}/')({
   component: RouteComponent,
   head: ({ params }) => {
     const { locale } = params;
-    const metaContent = getIntlayer('about', locale);
+    const metaContent = getIntlayer('app', locale);
 
     return {
       meta: [
@@ -22,7 +22,7 @@ export const Route = createFileRoute('/$locale/about/')({
 });
 
 function RouteComponent() {
-  const content = useIntlayer('about');
+  const content = useIntlayer('app');
   const navigate = useLocalizedNavigate();
 
   return (

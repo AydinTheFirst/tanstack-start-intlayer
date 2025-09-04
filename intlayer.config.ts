@@ -12,9 +12,6 @@ const config: IntlayerConfig = {
       // Your other locales
     ],
   },
-  middleware: {
-    prefixDefault: true,
-  },
 };
 
 export default config;
